@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Robot Navigation Simulation</title>
+    <style>
+      :root {
+        --bg: #04070f;
+        --panel: rgba(9, 13, 24, 0.8);
+        --line: rgba(126, 153, 220, 0.35);
+        --text: #edf3ff;
+        --muted: #a8b7d9;
+        --accent: #78e6d5;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 12% 18%, rgba(29, 62, 124, 0.35), transparent 42%),
+          radial-gradient(circle at 80% 82%, rgba(88, 25, 120, 0.3), transparent 46%),
+          var(--bg);
+      }
+
+      #nav-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .panel {
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        z-index: 20;
+        width: min(560px, calc(100vw - 28px));
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .panel-toggle {
+        padding: 6px 10px;
+        border-radius: 9px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        font-size: 0.78rem;
+        cursor: pointer;
+      }
+
+      .panel.collapsed {
+        width: auto;
+        max-width: calc(100vw - 28px);
+      }
+
+      .panel.collapsed .panel-body {
+        display: none;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-bottom: 8px;
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.14rem;
+      }
+
+      .panel p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        line-height: 1.45;
+        font-size: 0.9rem;
+      }
+
+      .toolbar {
+        display: grid;
+        gap: 8px;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .mode-btn,
+      .mini-btn,
+      input[type='range'] {
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+      }
+
+      .mode-btn,
+      .mini-btn {
+        padding: 6px 10px;
+        cursor: pointer;
+        font-size: 0.82rem;
+      }
+
+      .mode-btn.active {
+        border-color: rgba(120, 230, 213, 0.9);
+        box-shadow: 0 0 0 1px rgba(120, 230, 213, 0.4) inset;
+      }
+
+      .mini-btn:hover,
+      .mode-btn:hover {
+        border-color: var(--accent);
+      }
+
+      .range-wrap {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .range-wrap label,
+      .range-wrap output {
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+
+      .status {
+        margin-top: 4px;
+        font-size: 0.82rem;
+        color: #c1d1f6;
+      }
+
+      .legend {
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: #91a4cc;
+      }
+
+      @media (max-width: 760px) {
+        .panel {
+          width: calc(100vw - 18px);
+          left: 9px;
+          top: 9px;
+          padding: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="nav-canvas"></canvas>
+
+    <section class="panel" id="nav-panel">
+      <div class="panel-head">
+        <a href="index.html#hobbies" class="back-link">← Portfolioへ戻る</a>
+        <button class="panel-toggle" id="nav-panel-toggle" type="button" aria-expanded="true">Hide</button>
+      </div>
+      <div class="panel-body">
+        <h1>ロボットナビゲーションシミュレーション</h1>
+        <p>
+          Global Path Planner (A*) と Local Path Planner (回避制御) を重ね描きします。
+          モードを切り替えて障害物・参照経路・ゴール(最大3)を編集できます。
+        </p>
+
+        <div class="toolbar">
+          <div class="row" id="mode-row">
+            <button class="mode-btn active" data-mode="obstacle">障害物</button>
+            <button class="mode-btn" data-mode="reference">参照経路</button>
+            <button class="mode-btn" data-mode="goal">ゴール</button>
+          </div>
+
+          <div class="range-wrap">
+            <label for="robot-count">Robots</label>
+            <input id="robot-count" type="range" min="2" max="18" value="7" />
+            <output id="robot-count-out">7</output>
+          </div>
+
+          <div class="row">
+            <button class="mini-btn" id="clear-obstacles">障害物をクリア</button>
+            <button class="mini-btn" id="clear-reference">参照経路をクリア</button>
+            <button class="mini-btn" id="clear-goals">ゴールをクリア</button>
+            <button class="mini-btn" id="random-goal">ゴールをランダム</button>
+          </div>
+        </div>
+
+        <div class="status" id="status-line"></div>
+        <div class="legend">
+          左クリックで配置 / 右クリックで障害物削除(ゴールモード時はゴール削除)。動的障害物は自動で移動します。
+          ゴール到達時、ロボットは画面枠線のランダム位置に再配置されます。
+        </div>
+      </div>
+    </section>
+
+    <script>
+      (() => {
+        const canvas = document.getElementById('nav-canvas');
+        const ctx = canvas.getContext('2d');
+        const modeRow = document.getElementById('mode-row');
+        const robotSlider = document.getElementById('robot-count');
+        const robotOut = document.getElementById('robot-count-out');
+        const statusLine = document.getElementById('status-line');
+        const clearObstaclesBtn = document.getElementById('clear-obstacles');
+        const clearReferenceBtn = document.getElementById('clear-reference');
+        const clearGoalsBtn = document.getElementById('clear-goals');
+        const randomGoalBtn = document.getElementById('random-goal');
+        const navPanel = document.getElementById('nav-panel');
+        const navPanelToggle = document.getElementById('nav-panel-toggle');
+
+        let width = 0;
+        let height = 0;
+        let dpr = 1;
+        let mode = 'obstacle';
+        let isDrawing = false;
+        let lastPaint = null;
+        let lastTs = performance.now();
+        let replanClock = 0;
+
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+        const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+        const random = (min, max) => min + Math.random() * (max - min);
+
+        const state = {
+          goals: [],
+          obstacles: [],
+          dynamicObstacles: [],
+          reference: [],
+          robots: [],
+          desiredRobots: 7,
+          cellSize: 28
+        };
+
+        const maxGoals = 3;
+        const dynamicObstacleCount = 8;
+
+        const randomBorderPosition = () => {
+          const m = 14;
+          const edge = Math.floor(Math.random() * 4);
+          if (edge === 0) return { x: random(m, width - m), y: m };
+          if (edge === 1) return { x: width - m, y: random(m, height - m) };
+          if (edge === 2) return { x: random(m, width - m), y: height - m };
+          return { x: m, y: random(m, height - m) };
+        };
+
+        const createGoal = (x, y) => ({ x, y, r: 19 });
+
+        const nearestGoalInfo = (x, y) => {
+          if (!state.goals.length) return null;
+          let bestIndex = 0;
+          let bestDist = Infinity;
+          for (let i = 0; i < state.goals.length; i += 1) {
+            const g = state.goals[i];
+            const d = dist(x, y, g.x, g.y);
+            if (d < bestDist) {
+              bestDist = d;
+              bestIndex = i;
+            }
+          }
+          return { index: bestIndex, goal: state.goals[bestIndex], distance: bestDist };
+        };
+
+        const addGoal = (x, y) => {
+          const near = nearestGoalInfo(x, y);
+          if (near && near.distance < near.goal.r + 20) {
+            state.goals[near.index].x = x;
+            state.goals[near.index].y = y;
+            return;
+          }
+          if (state.goals.length < maxGoals) {
+            state.goals.push(createGoal(x, y));
+            return;
+          }
+          state.goals.shift();
+          state.goals.push(createGoal(x, y));
+        };
+
+        const removeNearestGoal = (x, y) => {
+          const near = nearestGoalInfo(x, y);
+          if (!near || near.distance > near.goal.r + 18) return;
+          state.goals.splice(near.index, 1);
+          if (!state.goals.length) {
+            const p = randomBorderPosition();
+            state.goals.push(createGoal(p.x, p.y));
+          }
+        };
+
+        const spawnDynamicObstacle = () => ({
+          x: random(40, Math.max(41, width - 40)),
+          y: random(40, Math.max(41, height - 40)),
+          r: random(14, 24),
+          vx: random(-1.05, 1.05),
+          vy: random(-1.05, 1.05),
+          phase: random(0, Math.PI * 2)
+        });
+
+        const ensureDynamicObstacles = () => {
+          while (state.dynamicObstacles.length < dynamicObstacleCount) {
+            state.dynamicObstacles.push(spawnDynamicObstacle());
+          }
+          while (state.dynamicObstacles.length > dynamicObstacleCount) {
+            state.dynamicObstacles.pop();
+          }
+        };
+
+        const updateDynamicObstacles = (dtNorm) => {
+          for (let i = 0; i < state.dynamicObstacles.length; i += 1) {
+            const o = state.dynamicObstacles[i];
+            o.phase += 0.018 * dtNorm;
+            o.vx += Math.cos(o.phase * 1.7 + i) * 0.012;
+            o.vy += Math.sin(o.phase * 1.35 + i * 0.8) * 0.012;
+            const speed = Math.hypot(o.vx, o.vy) || 1;
+            const maxSpeed = 1.35;
+            if (speed > maxSpeed) {
+              o.vx = (o.vx / speed) * maxSpeed;
+              o.vy = (o.vy / speed) * maxSpeed;
+            }
+            o.x += o.vx * dtNorm;
+            o.y += o.vy * dtNorm;
+            if (o.x < o.r) {
+              o.x = o.r;
+              o.vx = Math.abs(o.vx);
+            } else if (o.x > width - o.r) {
+              o.x = width - o.r;
+              o.vx = -Math.abs(o.vx);
+            }
+            if (o.y < o.r) {
+              o.y = o.r;
+              o.vy = Math.abs(o.vy);
+            } else if (o.y > height - o.r) {
+              o.y = height - o.r;
+              o.vy = -Math.abs(o.vy);
+            }
+          }
+        };
+
+        const spawnRobot = () => {
+          const p = randomBorderPosition();
+          const hue = random(185, 335);
+          return {
+            x: p.x,
+            y: p.y,
+            vx: random(-1, 1),
+            vy: random(-1, 1),
+            speed: random(2.3, 3.4),
+            hue,
+            trail: [],
+            globalPath: [],
+            pathIndex: 0,
+            goalIndex: -1,
+            spin: random(0, Math.PI * 2)
+          };
+        };
+
+        const ensureRobotCount = () => {
+          while (state.robots.length < state.desiredRobots) {
+            state.robots.push(spawnRobot());
+          }
+          while (state.robots.length > state.desiredRobots) {
+            state.robots.pop();
+          }
+          planAllRobots();
+        };
+
+        const toCell = (x, y, cols, rows, cell) => {
+          const cx = clamp(Math.floor(x / cell), 0, cols - 1);
+          const cy = clamp(Math.floor(y / cell), 0, rows - 1);
+          return { x: cx, y: cy };
+        };
+
+        const idx = (x, y, cols) => y * cols + x;
+
+        const nearestFreeCell = (start, blocked, cols, rows) => {
+          const startIndex = idx(start.x, start.y, cols);
+          if (!blocked[startIndex]) return start;
+          for (let r = 1; r <= 8; r += 1) {
+            for (let dy = -r; dy <= r; dy += 1) {
+              for (let dx = -r; dx <= r; dx += 1) {
+                const nx = start.x + dx;
+                const ny = start.y + dy;
+                if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+                if (!blocked[idx(nx, ny, cols)]) return { x: nx, y: ny };
+              }
+            }
+          }
+          return null;
+        };
+
+        const buildBlockedGrid = (cols, rows, cell) => {
+          const blocked = new Uint8Array(cols * rows);
+          const pad = 9;
+          for (let y = 0; y < rows; y += 1) {
+            const py = y * cell + cell * 0.5;
+            for (let x = 0; x < cols; x += 1) {
+              const px = x * cell + cell * 0.5;
+              let hit = false;
+              for (let i = 0; i < state.obstacles.length; i += 1) {
+                const o = state.obstacles[i];
+                if (dist(px, py, o.x, o.y) <= o.r + pad) {
+                  hit = true;
+                  break;
+                }
+              }
+              if (!hit) {
+                for (let i = 0; i < state.dynamicObstacles.length; i += 1) {
+                  const o = state.dynamicObstacles[i];
+                  if (dist(px, py, o.x, o.y) <= o.r + pad) {
+                    hit = true;
+                    break;
+                  }
+                }
+              }
+              blocked[idx(x, y, cols)] = hit ? 1 : 0;
+            }
+          }
+          return blocked;
+        };
+
+        const heuristic = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+        const aStar = (startWorld, endWorld) => {
+          const cell = state.cellSize;
+          const cols = Math.max(6, Math.floor(width / cell));
+          const rows = Math.max(4, Math.floor(height / cell));
+          const blocked = buildBlockedGrid(cols, rows, cell);
+          let start = toCell(startWorld.x, startWorld.y, cols, rows, cell);
+          let goal = toCell(endWorld.x, endWorld.y, cols, rows, cell);
+          start = nearestFreeCell(start, blocked, cols, rows);
+          goal = nearestFreeCell(goal, blocked, cols, rows);
+          if (!start || !goal) return null;
+
+          const key = (x, y) => `${x},${y}`;
+          const dirs = [
+            [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
+            [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]
+          ];
+
+          const open = [start];
+          const openSet = new Set([key(start.x, start.y)]);
+          const cameFrom = new Map();
+          const gScore = new Map([[key(start.x, start.y), 0]]);
+          const fScore = new Map([[key(start.x, start.y), heuristic(start, goal)]]);
+
+          while (open.length) {
+            let bestIndex = 0;
+            for (let i = 1; i < open.length; i += 1) {
+              if ((fScore.get(key(open[i].x, open[i].y)) ?? Infinity) < (fScore.get(key(open[bestIndex].x, open[bestIndex].y)) ?? Infinity)) {
+                bestIndex = i;
+              }
+            }
+
+            const current = open.splice(bestIndex, 1)[0];
+            const cKey = key(current.x, current.y);
+            openSet.delete(cKey);
+
+            if (current.x === goal.x && current.y === goal.y) {
+              const cells = [current];
+              let walk = cKey;
+              while (cameFrom.has(walk)) {
+                const prev = cameFrom.get(walk);
+                const [px, py] = prev.split(',').map(Number);
+                cells.push({ x: px, y: py });
+                walk = prev;
+              }
+              cells.reverse();
+              return cells.map((c) => ({
+                x: c.x * cell + cell * 0.5,
+                y: c.y * cell + cell * 0.5
+              }));
+            }
+
+            const currentG = gScore.get(cKey) ?? Infinity;
+            for (let d = 0; d < dirs.length; d += 1) {
+              const nx = current.x + dirs[d][0];
+              const ny = current.y + dirs[d][1];
+              if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+              if (blocked[idx(nx, ny, cols)]) continue;
+              const nKey = key(nx, ny);
+              const tentative = currentG + dirs[d][2];
+              if (tentative >= (gScore.get(nKey) ?? Infinity)) continue;
+              cameFrom.set(nKey, cKey);
+              gScore.set(nKey, tentative);
+              fScore.set(nKey, tentative + heuristic({ x: nx, y: ny }, goal));
+              if (!openSet.has(nKey)) {
+                open.push({ x: nx, y: ny });
+                openSet.add(nKey);
+              }
+            }
+          }
+          return null;
+        };
+
+        const sampledReference = () => {
+          const points = state.reference;
+          if (points.length < 2) return [];
+          const out = [points[0]];
+          const step = Math.max(2, Math.floor(points.length / 10));
+          for (let i = step; i < points.length - 1; i += step) out.push(points[i]);
+          out.push(points[points.length - 1]);
+          return out;
+        };
+
+        const planRoute = (sx, sy, gx, gy) => {
+          const refs = sampledReference();
+          const goals = [...refs, { x: gx, y: gy }];
+          let from = { x: sx, y: sy };
+          let merged = [];
+          for (let i = 0; i < goals.length; i += 1) {
+            const seg = aStar(from, goals[i]);
+            if (!seg || seg.length === 0) return aStar({ x: sx, y: sy }, { x: gx, y: gy }) || [];
+            if (merged.length > 0) seg.shift();
+            merged = merged.concat(seg);
+            from = goals[i];
+          }
+          return merged;
+        };
+
+        const planRobot = (robot) => {
+          const nearest = nearestGoalInfo(robot.x, robot.y);
+          if (!nearest) {
+            robot.goalIndex = -1;
+            robot.globalPath = [];
+            robot.pathIndex = 0;
+            return;
+          }
+          robot.goalIndex = nearest.index;
+          robot.globalPath = planRoute(robot.x, robot.y, nearest.goal.x, nearest.goal.y);
+          robot.pathIndex = 0;
+        };
+
+        const planAllRobots = () => {
+          for (let i = 0; i < state.robots.length; i += 1) planRobot(state.robots[i]);
+        };
+
+        const addObstacle = (x, y) => {
+          const radius = random(20, 44);
+          state.obstacles.push({ x, y, r: radius });
+        };
+
+        const removeNearestObstacle = (x, y) => {
+          let best = -1;
+          let bestD = Infinity;
+          for (let i = 0; i < state.obstacles.length; i += 1) {
+            const o = state.obstacles[i];
+            const d = dist(x, y, o.x, o.y) - o.r;
+            if (d < bestD) {
+              bestD = d;
+              best = i;
+            }
+          }
+          if (best >= 0 && bestD < 22) {
+            state.obstacles.splice(best, 1);
+            planAllRobots();
+          }
+        };
+
+        const localPlannerStep = (robot, dtNorm) => {
+          const nearest = nearestGoalInfo(robot.x, robot.y);
+          if (!nearest) return;
+          if (nearest.index !== robot.goalIndex) {
+            planRobot(robot);
+          }
+
+          const activeGoal = state.goals[robot.goalIndex] || nearest.goal;
+          let target = robot.globalPath[robot.pathIndex] || activeGoal;
+          if (target && dist(robot.x, robot.y, target.x, target.y) < 18 && robot.pathIndex < robot.globalPath.length - 1) {
+            robot.pathIndex += 1;
+            target = robot.globalPath[robot.pathIndex] || activeGoal;
+          }
+
+          let fx = 0;
+          let fy = 0;
+          const dx = target.x - robot.x;
+          const dy = target.y - robot.y;
+          const d = Math.hypot(dx, dy) || 1;
+          fx += (dx / d) * robot.speed;
+          fy += (dy / d) * robot.speed;
+
+          for (let i = 0; i < state.obstacles.length; i += 1) {
+            const o = state.obstacles[i];
+            const ox = robot.x - o.x;
+            const oy = robot.y - o.y;
+            const od = Math.hypot(ox, oy) || 1;
+            const safe = o.r + 64;
+            if (od < safe) {
+              const push = ((safe - od) / safe) * 3.2;
+              fx += (ox / od) * push;
+              fy += (oy / od) * push;
+            }
+          }
+
+          for (let i = 0; i < state.dynamicObstacles.length; i += 1) {
+            const o = state.dynamicObstacles[i];
+            const ox = robot.x - o.x;
+            const oy = robot.y - o.y;
+            const od = Math.hypot(ox, oy) || 1;
+            const safe = o.r + 72;
+            if (od < safe) {
+              const push = ((safe - od) / safe) * 4.1;
+              fx += (ox / od) * push;
+              fy += (oy / od) * push;
+            }
+          }
+
+          for (let i = 0; i < state.robots.length; i += 1) {
+            const other = state.robots[i];
+            if (other === robot) continue;
+            const rx = robot.x - other.x;
+            const ry = robot.y - other.y;
+            const rd = Math.hypot(rx, ry) || 1;
+            if (rd < 42) {
+              const repel = ((42 - rd) / 42) * 2.8;
+              fx += (rx / rd) * repel;
+              fy += (ry / rd) * repel;
+            }
+          }
+
+          const wall = 34;
+          if (robot.x < wall) fx += ((wall - robot.x) / wall) * 3.5;
+          if (robot.x > width - wall) fx -= ((robot.x - (width - wall)) / wall) * 3.5;
+          if (robot.y < wall) fy += ((wall - robot.y) / wall) * 3.5;
+          if (robot.y > height - wall) fy -= ((robot.y - (height - wall)) / wall) * 3.5;
+
+          const maxV = 4.4;
+          robot.vx = robot.vx * 0.82 + fx * 0.18;
+          robot.vy = robot.vy * 0.82 + fy * 0.18;
+          const sp = Math.hypot(robot.vx, robot.vy) || 1;
+          if (sp > maxV) {
+            robot.vx = (robot.vx / sp) * maxV;
+            robot.vy = (robot.vy / sp) * maxV;
+          }
+
+          robot.x += robot.vx * dtNorm;
+          robot.y += robot.vy * dtNorm;
+          robot.spin += 0.03 * dtNorm;
+          robot.x = clamp(robot.x, 4, width - 4);
+          robot.y = clamp(robot.y, 4, height - 4);
+
+          robot.trail.push({ x: robot.x, y: robot.y });
+          if (robot.trail.length > 24) robot.trail.shift();
+
+          if (dist(robot.x, robot.y, activeGoal.x, activeGoal.y) <= activeGoal.r + 5) {
+            const respawn = randomBorderPosition();
+            robot.x = respawn.x;
+            robot.y = respawn.y;
+            robot.vx = random(-1.2, 1.2);
+            robot.vy = random(-1.2, 1.2);
+            robot.trail.length = 0;
+            planRobot(robot);
+          }
+        };
+
+        const drawGoals = () => {
+          for (let i = 0; i < state.goals.length; i += 1) {
+            const g = state.goals[i];
+            ctx.save();
+            ctx.strokeStyle = 'rgba(132, 248, 226, 0.92)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(132, 248, 226, 0.35)';
+            ctx.beginPath();
+            ctx.arc(g.x, g.y, g.r + 10, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(132, 248, 226, 0.9)';
+            ctx.font = '12px "Space Grotesk", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(String(i + 1), g.x, g.y);
+            ctx.restore();
+          }
+        };
+
+        const drawObstacle = (o, dynamic = false) => {
+          const g = ctx.createRadialGradient(o.x, o.y, o.r * 0.2, o.x, o.y, o.r * 1.2);
+          if (dynamic) {
+            g.addColorStop(0, 'rgba(130, 205, 255, 0.24)');
+            g.addColorStop(1, 'rgba(55, 120, 220, 0.03)');
+          } else {
+            g.addColorStop(0, 'rgba(255, 158, 210, 0.2)');
+            g.addColorStop(1, 'rgba(165, 116, 228, 0.03)');
+          }
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(o.x, o.y, o.r * 1.2, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = dynamic ? 'rgba(140, 224, 255, 0.76)' : 'rgba(255, 183, 223, 0.68)';
+          ctx.lineWidth = dynamic ? 1.2 : 1;
+          ctx.beginPath();
+          ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+          ctx.stroke();
+        };
+
+        const drawPolyline = (points, color, widthPx, dashed = false) => {
+          if (!points || points.length < 2) return;
+          ctx.save();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = widthPx;
+          if (dashed) ctx.setLineDash([7, 6]);
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i].x, points[i].y);
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        const drawRobot = (robot) => {
+          if (robot.trail.length > 1) {
+            const trailColor = `hsla(${robot.hue}, 90%, 72%, 0.22)`;
+            drawPolyline(robot.trail, trailColor, 3, false);
+          }
+
+          const grad = ctx.createRadialGradient(robot.x, robot.y, 1, robot.x, robot.y, 18);
+          grad.addColorStop(0, `hsla(${robot.hue}, 95%, 82%, 0.95)`);
+          grad.addColorStop(0.5, `hsla(${robot.hue + 18}, 88%, 62%, 0.65)`);
+          grad.addColorStop(1, `hsla(${robot.hue + 30}, 90%, 50%, 0.08)`);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(robot.x, robot.y, 18, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = `hsla(${robot.hue + 15}, 98%, 90%, 0.82)`;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.arc(robot.x, robot.y, 7.6, robot.spin, robot.spin + Math.PI * 1.5);
+          ctx.stroke();
+
+          ctx.strokeStyle = `hsla(${robot.hue + 35}, 80%, 70%, 0.72)`;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(robot.x, robot.y, 10.8, -robot.spin * 1.2, -robot.spin * 1.2 + Math.PI * 1.2);
+          ctx.stroke();
+        };
+
+        const drawScene = () => {
+          ctx.clearRect(0, 0, width, height);
+          ctx.fillStyle = 'rgba(4, 7, 15, 0.2)';
+          ctx.fillRect(0, 0, width, height);
+
+          drawPolyline(state.reference, 'rgba(121, 194, 255, 0.55)', 1.2, true);
+          for (let i = 0; i < state.obstacles.length; i += 1) drawObstacle(state.obstacles[i]);
+          for (let i = 0; i < state.dynamicObstacles.length; i += 1) drawObstacle(state.dynamicObstacles[i], true);
+          drawGoals();
+
+          for (let i = 0; i < state.robots.length; i += 1) {
+            const r = state.robots[i];
+            drawPolyline(r.globalPath, `hsla(${r.hue + 5}, 90%, 76%, 0.18)`, 1, true);
+            const nearest = nearestGoalInfo(r.x, r.y);
+            const tgt = r.globalPath[r.pathIndex] || (nearest ? nearest.goal : null);
+            if (!tgt) continue;
+            drawPolyline([{ x: r.x, y: r.y }, tgt], `hsla(${r.hue + 25}, 92%, 82%, 0.26)`, 0.9, false);
+          }
+
+          for (let i = 0; i < state.robots.length; i += 1) drawRobot(state.robots[i]);
+        };
+
+        const animate = (ts) => {
+          const dt = clamp((ts - lastTs) / 16.666, 0.4, 1.8);
+          lastTs = ts;
+          updateDynamicObstacles(dt);
+          replanClock += dt;
+          if (replanClock >= 70) {
+            replanClock = 0;
+            planAllRobots();
+          }
+          for (let i = 0; i < state.robots.length; i += 1) localPlannerStep(state.robots[i], dt);
+          drawScene();
+          statusLine.textContent = `Mode: ${mode} | Robots: ${state.robots.length} | Obstacles: ${state.obstacles.length} + Dynamic ${state.dynamicObstacles.length} | Goals: ${state.goals.length}/3 | Ref points: ${state.reference.length}`;
+          requestAnimationFrame(animate);
+        };
+
+        const pointerPos = (e) => {
+          const rect = canvas.getBoundingClientRect();
+          return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        };
+
+        canvas.addEventListener('pointerdown', (e) => {
+          const p = pointerPos(e);
+          if (e.button === 2) {
+            if (mode === 'goal') {
+              removeNearestGoal(p.x, p.y);
+              planAllRobots();
+              return;
+            }
+            removeNearestObstacle(p.x, p.y);
+            return;
+          }
+          if (mode === 'goal') {
+            addGoal(p.x, p.y);
+            planAllRobots();
+            return;
+          }
+          isDrawing = true;
+          lastPaint = p;
+          if (mode === 'obstacle') addObstacle(p.x, p.y);
+          if (mode === 'reference') state.reference.push(p);
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+          if (!isDrawing) return;
+          const p = pointerPos(e);
+          if (mode === 'obstacle') {
+            if (!lastPaint || dist(lastPaint.x, lastPaint.y, p.x, p.y) > 28) {
+              addObstacle(p.x, p.y);
+              lastPaint = p;
+            }
+          } else if (mode === 'reference') {
+            if (!lastPaint || dist(lastPaint.x, lastPaint.y, p.x, p.y) > 10) {
+              state.reference.push(p);
+              lastPaint = p;
+            }
+          }
+        });
+
+        const endDraw = () => {
+          if (!isDrawing) return;
+          isDrawing = false;
+          lastPaint = null;
+          if (mode === 'obstacle' || mode === 'reference') planAllRobots();
+        };
+
+        canvas.addEventListener('pointerup', endDraw);
+        canvas.addEventListener('pointerleave', endDraw);
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        modeRow.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-mode]');
+          if (!btn) return;
+          mode = btn.dataset.mode;
+          [...modeRow.querySelectorAll('button[data-mode]')].forEach((b) => b.classList.toggle('active', b === btn));
+        });
+
+        robotSlider.addEventListener('input', () => {
+          state.desiredRobots = Number(robotSlider.value);
+          robotOut.textContent = String(state.desiredRobots);
+          ensureRobotCount();
+        });
+
+        clearObstaclesBtn.addEventListener('click', () => {
+          state.obstacles = [];
+          planAllRobots();
+        });
+        clearReferenceBtn.addEventListener('click', () => {
+          state.reference = [];
+          planAllRobots();
+        });
+        if (clearGoalsBtn) {
+          clearGoalsBtn.addEventListener('click', () => {
+            state.goals = [];
+            const p = randomBorderPosition();
+            state.goals.push(createGoal(p.x, p.y));
+            planAllRobots();
+          });
+        }
+        randomGoalBtn.addEventListener('click', () => {
+          const goalCount = Math.max(1, Math.min(maxGoals, state.goals.length || maxGoals));
+          state.goals = Array.from({ length: goalCount }, () => {
+            const p = randomBorderPosition();
+            return createGoal(p.x, p.y);
+          });
+          planAllRobots();
+        });
+
+        if (navPanel && navPanelToggle) {
+          navPanelToggle.addEventListener('click', () => {
+            const collapsed = navPanel.classList.toggle('collapsed');
+            navPanelToggle.textContent = collapsed ? 'Show' : 'Hide';
+            navPanelToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+          });
+        }
+
+        const resize = () => {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          width = window.innerWidth;
+          height = window.innerHeight;
+          canvas.width = Math.floor(width * dpr);
+          canvas.height = Math.floor(height * dpr);
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          if (!state.goals.length) {
+            state.goals.push(createGoal(width * 0.84, height * 0.26));
+          }
+          for (let i = 0; i < state.goals.length; i += 1) {
+            state.goals[i].x = clamp(state.goals[i].x, 24, width - 24);
+            state.goals[i].y = clamp(state.goals[i].y, 24, height - 24);
+          }
+
+          ensureDynamicObstacles();
+          for (let i = 0; i < state.dynamicObstacles.length; i += 1) {
+            const o = state.dynamicObstacles[i];
+            o.x = clamp(o.x, o.r, width - o.r);
+            o.y = clamp(o.y, o.r, height - o.r);
+          }
+          planAllRobots();
+        };
+
+        state.desiredRobots = Number(robotSlider.value);
+        robotOut.textContent = String(state.desiredRobots);
+        ensureDynamicObstacles();
+        ensureRobotCount();
+        resize();
+        window.addEventListener('resize', resize);
+        requestAnimationFrame(animate);
+      })();
+    </script>
+  </body>
+</html>

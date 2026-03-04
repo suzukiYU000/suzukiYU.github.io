@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Typing Fall Motion</title>
+    <style>
+      :root {
+        --bg: #0a0b12;
+        --panel: rgba(13, 16, 27, 0.78);
+        --line: rgba(172, 186, 232, 0.3);
+        --text: #edf2ff;
+        --muted: #a5b2d0;
+        --accent: #79ead5;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 18% 18%, rgba(46, 62, 122, 0.56), transparent 42%),
+          radial-gradient(circle at 80% 82%, rgba(124, 44, 132, 0.34), transparent 48%),
+          var(--bg);
+      }
+
+      #type-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .panel {
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        z-index: 20;
+        width: min(420px, calc(100vw - 28px));
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .panel-toggle {
+        padding: 6px 10px;
+        border-radius: 9px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        font-size: 0.78rem;
+        cursor: pointer;
+      }
+
+      .panel.collapsed {
+        width: auto;
+        max-width: calc(100vw - 28px);
+      }
+
+      .panel.collapsed .panel-body {
+        display: none;
+      }
+
+      .quick-input {
+        position: fixed;
+        top: 58px;
+        left: 14px;
+        z-index: 19;
+        width: min(420px, calc(100vw - 28px));
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        padding: 9px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+      }
+
+      .quick-input[hidden] {
+        display: none;
+      }
+
+      .quick-input input[type='text'] {
+        min-width: 0;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-bottom: 8px;
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 0.86rem;
+      }
+
+      h1 {
+        margin: 0 0 7px;
+        font-size: 1.08rem;
+      }
+
+      .panel p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        line-height: 1.48;
+        font-size: 0.88rem;
+      }
+
+      .entry-form {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      input[type='text'] {
+        min-width: 0;
+        padding: 7px 9px;
+        border-radius: 9px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        font-size: 0.9rem;
+      }
+
+      button,
+      select,
+      input[type='range'] {
+        border-radius: 9px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+      }
+
+      button {
+        padding: 7px 10px;
+        cursor: pointer;
+        font-size: 0.84rem;
+      }
+
+      button:hover {
+        border-color: var(--accent);
+      }
+
+      .style-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .style-cell {
+        display: grid;
+        gap: 4px;
+      }
+
+      .style-cell label {
+        font-size: 0.73rem;
+        color: var(--muted);
+      }
+
+      .style-cell select {
+        padding: 6px 7px;
+        font-size: 0.84rem;
+      }
+
+      .range-wrap {
+        display: grid;
+        grid-template-columns: 1fr 34px;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .range-wrap output {
+        text-align: right;
+        font-size: 0.73rem;
+        color: var(--accent);
+      }
+
+      .tips {
+        margin-top: 8px;
+        font-size: 0.76rem;
+        color: var(--muted);
+      }
+
+      @media (max-width: 720px) {
+        .entry-form {
+          grid-template-columns: 1fr;
+        }
+
+        .style-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .quick-input {
+          top: 56px;
+          left: 10px;
+          width: calc(100vw - 20px);
+        }
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f4efe2;
+          --panel: rgba(251, 247, 238, 0.86);
+          --line: rgba(87, 79, 64, 0.26);
+          --text: #2e2a24;
+          --muted: #5f594f;
+          --accent: #1e7d74;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="type-canvas"></canvas>
+
+    <section class="panel" id="type-panel">
+      <div class="panel-head">
+        <a class="back-link" href="index.html#hobbies">Back to Portfolio</a>
+        <button class="panel-toggle" id="type-panel-toggle" type="button" aria-expanded="true">Hide</button>
+      </div>
+      <div class="panel-body">
+        <h1>Typing Fall Motion</h1>
+        <p>Press Space to drop input instantly. Tune style, size, gravity, and glow.</p>
+
+        <form id="type-form" class="entry-form">
+          <input id="type-input" type="text" placeholder="Type text and hit Space" autocomplete="off" />
+          <button type="submit">Drop</button>
+          <button id="clear-btn" type="button">Clear</button>
+        </form>
+
+        <div class="style-grid">
+          <div class="style-cell">
+            <label for="style-profile">Style</label>
+            <select id="style-profile">
+              <option value="neon">Neon</option>
+              <option value="ink">Ink</option>
+              <option value="shodo">Shodo (書道風)</option>
+              <option value="mono">Monochrome</option>
+              <option value="glitch">Glitch</option>
+            </select>
+          </div>
+          <div class="style-cell">
+            <label for="size-scale">Size</label>
+            <div class="range-wrap">
+              <input id="size-scale" type="range" min="0.6" max="1.8" step="0.05" value="1.00" />
+              <output id="size-scale-val">1.00</output>
+            </div>
+          </div>
+          <div class="style-cell">
+            <label for="gravity-control">Gravity</label>
+            <div class="range-wrap">
+              <input id="gravity-control" type="range" min="0.04" max="0.20" step="0.01" value="0.09" />
+              <output id="gravity-control-val">0.09</output>
+            </div>
+          </div>
+          <div class="style-cell">
+            <label for="glow-control">Glow</label>
+            <div class="range-wrap">
+              <input id="glow-control" type="range" min="0" max="30" step="1" value="12" />
+              <output id="glow-control-val">12</output>
+            </div>
+          </div>
+        </div>
+
+        <div class="tips">Tip: click empty space to spawn random letters.</div>
+      </div>
+    </section>
+    <div class="quick-input" id="quick-input-wrap" hidden>
+      <input id="quick-type-input" type="text" placeholder="Type text and hit Space" autocomplete="off" />
+      <button id="quick-drop-btn" type="button">Drop</button>
+    </div>
+
+    <script>
+      (() => {
+        const canvas = document.getElementById('type-canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        let frame = 0;
+
+        const glyphs = [];
+        const themeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        let isDarkMode = themeQuery.matches;
+
+        const styleState = {
+          profile: 'neon',
+          sizeScale: 1,
+          gravity: 0.09,
+          glow: 12
+        };
+
+        const palettes = {
+          neon: { hueMin: 165, hueMax: 310, light: 76, sat: 90, alpha: 1.0 },
+          ink: { hueMin: 210, hueMax: 230, light: 52, sat: 10, alpha: 0.95 },
+          shodo: { hueMin: 26, hueMax: 38, light: 18, sat: 26, alpha: 0.96 },
+          mono: { hueMin: 186, hueMax: 196, light: 84, sat: 12, alpha: 0.92 },
+          glitch: { hueMin: 285, hueMax: 360, light: 72, sat: 92, alpha: 1.0 }
+        };
+
+        const random = (min, max) => min + Math.random() * (max - min);
+
+        const resize = () => {
+          width = window.innerWidth;
+          height = window.innerHeight;
+          canvas.width = Math.floor(width * dpr);
+          canvas.height = Math.floor(height * dpr);
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+
+        const getFontFamily = (profile) => {
+          if (profile === 'ink') return '"Times New Roman", "Georgia", serif';
+          if (profile === 'shodo') return '"Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif';
+          if (profile === 'mono') return '"Courier New", monospace';
+          if (profile === 'glitch') return '"Arial Black", "Impact", sans-serif';
+          return '"Space Grotesk", "Segoe UI", sans-serif';
+        };
+
+        const spawnText = (text) => {
+          const chars = Array.from(text);
+          if (!chars.length) return;
+          const palette = palettes[styleState.profile];
+          const gap = Math.min(24, (width * 0.8) / Math.max(chars.length, 1));
+          const startX = width * 0.5 - ((chars.length - 1) * gap) / 2;
+          const baseY = height * 0.2;
+
+          chars.forEach((char, index) => {
+            const baseSize = random(24, 56) * styleState.sizeScale;
+            glyphs.push({
+              char: char === ' ' ? '.' : char,
+              x: startX + index * gap + random(-7, 7),
+              y: baseY + random(-14, 14),
+              vx: random(-1.5, 1.5),
+              vy: random(-3.8, -1.1),
+              rot: random(-0.4, 0.4),
+              vr: random(-0.065, 0.065),
+              size: baseSize,
+              alpha: palette.alpha,
+              wobble: random(0.01, 0.03),
+              hue: random(palette.hueMin, palette.hueMax),
+              sat: palette.sat,
+              light: palette.light,
+              profile: styleState.profile,
+              radius: baseSize * 0.27,
+              brush: random(0.8, 1.3),
+              bleed: random(0.6, 1.6)
+            });
+          });
+        };
+
+        const dropInputText = (input) => {
+          if (!input) return;
+          const value = input.value.trim();
+          if (!value) return;
+          spawnText(value);
+          input.value = '';
+          input.focus();
+        };
+
+        const drawBackground = () => {
+          ctx.fillStyle = isDarkMode ? 'rgba(6, 9, 17, 0.24)' : 'rgba(242, 236, 224, 0.30)';
+          ctx.fillRect(0, 0, width, height);
+        };
+
+        const updateGlyphs = () => {
+          for (let i = glyphs.length - 1; i >= 0; i -= 1) {
+            const g = glyphs[i];
+            g.vy += styleState.gravity;
+            g.x += g.vx + Math.sin(frame * g.wobble + i) * 0.42;
+            g.y += g.vy;
+            g.rot += g.vr;
+
+            if (g.y > height - 22) {
+              g.y = height - 22;
+              g.vy *= -0.35;
+              g.vx *= 0.9;
+              g.vr *= 0.93;
+              g.alpha -= 0.012;
+            }
+
+            if (g.alpha <= 0 || g.y > height + 150 || g.x < -120 || g.x > width + 120) {
+              glyphs.splice(i, 1);
+            }
+          }
+        };
+
+        const resolveCollisions = () => {
+          const count = glyphs.length;
+          for (let i = 0; i < count; i += 1) {
+            const a = glyphs[i];
+            for (let j = i + 1; j < count; j += 1) {
+              const b = glyphs[j];
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              const dist2 = dx * dx + dy * dy;
+              const minDist = a.radius + b.radius;
+              if (dist2 <= 0.0001 || dist2 >= minDist * minDist) continue;
+
+              const dist = Math.sqrt(dist2);
+              const nx = dx / dist;
+              const ny = dy / dist;
+              const overlap = (minDist - dist) * 0.52;
+
+              a.x -= nx * overlap;
+              a.y -= ny * overlap;
+              b.x += nx * overlap;
+              b.y += ny * overlap;
+
+              const push = 0.055;
+              a.vx -= nx * push;
+              a.vy -= ny * push;
+              b.vx += nx * push;
+              b.vy += ny * push;
+            }
+          }
+        };
+
+        const renderGlyphs = () => {
+          ctx.textBaseline = 'middle';
+          ctx.textAlign = 'center';
+
+          for (let i = 0; i < glyphs.length; i += 1) {
+            const g = glyphs[i];
+            const jitterX = g.profile === 'glitch' ? Math.sin(frame * 0.4 + i) * 1.2 : 0;
+            const jitterY = g.profile === 'glitch' ? Math.cos(frame * 0.45 + i) * 1.2 : 0;
+            ctx.save();
+            ctx.translate(g.x + jitterX, g.y + jitterY);
+            ctx.rotate(g.rot);
+            ctx.font = `700 ${g.size}px ${getFontFamily(g.profile)}`;
+
+            if (g.profile === 'shodo') {
+              const alpha = Math.max(0, g.alpha);
+              const strokeRGB = isDarkMode ? '242, 244, 248' : '22, 18, 14';
+              const fillRGB = isDarkMode ? '255, 255, 255' : '34, 27, 20';
+              const bleedRGB = isDarkMode ? '220, 226, 236' : '18, 14, 11';
+              const shadowRGB = isDarkMode ? '255, 255, 255' : '28, 23, 17';
+              ctx.shadowColor = `rgba(${shadowRGB}, ${0.24 * alpha})`;
+              ctx.shadowBlur = styleState.glow * 0.35;
+              ctx.lineWidth = Math.max(1, g.size * 0.036 * g.brush);
+              ctx.strokeStyle = `rgba(${strokeRGB}, ${0.74 * alpha})`;
+              ctx.fillStyle = `rgba(${fillRGB}, ${0.92 * alpha})`;
+              ctx.strokeText(g.char, 0, 0);
+              ctx.fillText(g.char, 0, 0);
+              ctx.fillStyle = `rgba(${bleedRGB}, ${0.24 * alpha})`;
+              ctx.fillText(g.char, g.bleed, g.bleed * 0.6);
+              ctx.fillText(g.char, -g.bleed * 0.8, g.bleed * 0.4);
+              ctx.restore();
+              continue;
+            }
+
+            ctx.fillStyle = `hsla(${g.hue}, ${g.sat}%, ${g.light}%, ${Math.max(0, g.alpha)})`;
+            ctx.shadowColor = `hsla(${g.hue}, ${Math.min(100, g.sat + 6)}%, ${Math.min(90, g.light + 2)}%, 0.36)`;
+            ctx.shadowBlur = styleState.glow;
+            ctx.fillText(g.char, 0, 0);
+            ctx.restore();
+          }
+        };
+
+        const loop = () => {
+          frame += 1;
+          drawBackground();
+          updateGlyphs();
+          resolveCollisions();
+          renderGlyphs();
+          requestAnimationFrame(loop);
+        };
+
+        const bindRange = (id, stateKey, digits) => {
+          const input = document.getElementById(id);
+          const output = document.getElementById(`${id}-val`);
+          if (!input || !output) return;
+          const sync = () => {
+            styleState[stateKey] = Number(input.value);
+            output.textContent = styleState[stateKey].toFixed(digits);
+          };
+          input.addEventListener('input', sync);
+          sync();
+        };
+
+        bindRange('size-scale', 'sizeScale', 2);
+        bindRange('gravity-control', 'gravity', 2);
+        bindRange('glow-control', 'glow', 0);
+
+        const styleSelect = document.getElementById('style-profile');
+        if (styleSelect) {
+          styleSelect.addEventListener('change', () => {
+            styleState.profile = styleSelect.value;
+          });
+        }
+
+        const form = document.getElementById('type-form');
+        const input = document.getElementById('type-input');
+        const clearBtn = document.getElementById('clear-btn');
+        const panel = document.getElementById('type-panel');
+        const panelToggle = document.getElementById('type-panel-toggle');
+        const quickInputWrap = document.getElementById('quick-input-wrap');
+        const quickInput = document.getElementById('quick-type-input');
+        const quickDropBtn = document.getElementById('quick-drop-btn');
+
+        if (form && input) {
+          form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            dropInputText(input);
+          });
+
+          input.addEventListener('keydown', (event) => {
+            if (event.key === ' ' && input.value.trim()) {
+              event.preventDefault();
+              dropInputText(input);
+            }
+          });
+        }
+
+        document.addEventListener('keydown', (event) => {
+          const activeElement = document.activeElement;
+          const focusedComposer = activeElement === input || activeElement === quickInput;
+          if (event.key === ' ' && !focusedComposer && input && input.value.trim()) {
+            event.preventDefault();
+            dropInputText(input);
+            return;
+          }
+          if (event.key === ' ' && !focusedComposer && quickInput && quickInput.value.trim()) {
+            event.preventDefault();
+            dropInputText(quickInput);
+          }
+        });
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', () => {
+            glyphs.length = 0;
+          });
+        }
+
+        if (panel && panelToggle) {
+          panelToggle.addEventListener('click', () => {
+            const collapsed = panel.classList.toggle('collapsed');
+            panelToggle.textContent = collapsed ? 'Show' : 'Hide';
+            panelToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            if (quickInputWrap) {
+              quickInputWrap.hidden = !collapsed;
+            }
+            if (collapsed && quickInput) {
+              quickInput.focus();
+            } else if (!collapsed && input) {
+              input.focus();
+            }
+          });
+        }
+
+        if (quickInput && quickDropBtn) {
+          quickDropBtn.addEventListener('click', () => {
+            dropInputText(quickInput);
+          });
+          quickInput.addEventListener('keydown', (event) => {
+            if (event.key === ' ' && quickInput.value.trim()) {
+              event.preventDefault();
+              dropInputText(quickInput);
+            }
+          });
+        }
+
+        if (themeQuery.addEventListener) {
+          themeQuery.addEventListener('change', (event) => {
+            isDarkMode = event.matches;
+          });
+        } else if (themeQuery.addListener) {
+          themeQuery.addListener((event) => {
+            isDarkMode = event.matches;
+          });
+        }
+
+        window.addEventListener('pointerdown', (event) => {
+          if (event.target instanceof HTMLElement && (event.target.closest('.panel') || event.target.closest('.quick-input'))) return;
+          const randomChars = ['A', 'R', 'T', 'N', 'A', 'V', 'W', 'A', 'V', 'E'];
+          const char = randomChars[Math.floor(Math.random() * randomChars.length)];
+          spawnText(char);
+          const g = glyphs[glyphs.length - 1];
+          if (g) {
+            g.x = event.clientX;
+            g.y = event.clientY;
+            g.vx = random(-1.8, 1.8);
+            g.vy = random(-2.8, -1.2);
+          }
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        drawBackground();
+        loop();
+      })();
+    </script>
+  </body>
+</html>

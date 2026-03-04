@@ -1,0 +1,348 @@
+﻿<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suzuki Yuma | Robotics Research Portfolio</title>
+    <meta
+      name="description"
+      content="ロボット研究者・Suzuki Yumaのポートフォリオ。論文、活動実績、社会実装プロジェクトを掲載。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <canvas id="fluid-bg" aria-hidden="true"></canvas>
+    <div class="cursor-dot" aria-hidden="true"></div>
+    <div class="cursor-ring" aria-hidden="true"></div>
+    <div id="intro-gate" class="intro-gate" aria-hidden="true">
+      <canvas id="intro-particle-canvas" class="intro-particle-canvas" aria-hidden="true"></canvas>
+    </div>
+
+    <header class="site-header">
+      <a href="#top" class="logo">YUMA</a>
+      <nav>
+        <a href="#achievements">Achievements</a>
+        <a href="#papers">Papers</a>
+        <a href="#activities">Activities</a>
+        <a href="#social">Social Project</a>
+        <a href="#hobbies">Hobby</a>
+        <a href="#contact">Contact</a>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="テーマ切替">Theme: Auto</button>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero reveal">
+        <div class="hero-main">
+          <div class="hero-copy">
+            <p class="eyebrow">ROBOTICS RESEARCHER</p>
+            <h1>
+              Suzuki Yuma
+              <span>PhD student / 未踏AD '25 クリエーター</span>
+            </h1>
+            <p>
+              I explore <strong>Shared Autonomy</strong> and <strong>Motor Control</strong>,
+              viewing assistive technologies like electric wheelchairs as a form of <strong>body augmentation</strong>.
+              By studying how humans and machines co-adapt,
+              I seek to unlock insights that benefit everyone—regardless of age or ability.
+              My goal is to foster a future where humans and intelligent robots evolve together,
+              creating a vibrant and inclusive society for all.
+            </p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="#achievements">ギャラリー</a>
+              <a class="btn btn-ghost" href="#papers">研究</a>
+              <a class="btn btn-ghost" href="https://www.humonii.com/" target="_blank" rel="noreferrer">社会実装プロジェクト🔗</a>
+            </div>
+          </div>
+          <figure class="profile-card">
+            <img
+              id="profile-photo"
+              data-media-key="profilePhoto"
+              src="assets/IMG_9679.jpg"
+              alt="顔写真"
+              draggable="false"
+              loading="lazy"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <section id="achievements" class="section reveal">
+        <div class="section-head">
+          <p class="eyebrow">OUTPUT MOVIES</p>
+          <h2>ギャラリー</h2>
+        </div>
+        <div class="media-grid">
+          <article class="media-card">
+            <figure>
+              <video
+                id="feeling-video"
+                controls
+                controlslist="nodownload noremoteplayback"
+                disablepictureinpicture
+                disableremoteplayback
+                preload="metadata"
+                playsinline
+                data-thumbnail-time="1.7"
+              >
+                <source data-media-key="feelingVideo" src="assets/Feeling.mp4" type="video/mp4" />
+                お使いのブラウザは動画再生に対応していません。
+              </video>
+              <figcaption data-media-caption-key="feelingVideo">Feeling Hands-Free Mobility</figcaption>
+            </figure>
+          </article>
+
+          <article class="media-card">
+            <figure>
+              <video
+                controls
+                controlslist="nodownload noremoteplayback"
+                disablepictureinpicture
+                disableremoteplayback
+                preload="metadata"
+                playsinline
+              >
+                <source data-media-key="sharedControlVideo" src="assets/SharedControl.mp4" type="video/mp4" />
+                お使いのブラウザは動画再生に対応していません。
+              </video>
+              <figcaption data-media-caption-key="sharedControlVideo">共有制御 / Shared Control</figcaption>
+            </figure>
+          </article>
+        </div>
+      </section>
+
+      <section id="papers" class="section reveal">
+        <div class="section-head">
+          <p class="eyebrow">PAPER WORKS</p>
+          <h2>論文・研究発表</h2>
+        </div>
+        <div class="paper-list">
+          <article class="paper-item">
+            <p class="paper-year">2025</p>
+            <div>
+              <h3>Controllability Assessment of Belt-Type Wheelchair Interface with Individualized Asymmetry-Aware Body-Axis Calibration</h3>
+              <p>＠2025 IEEE International Conference on Systems, Man, and Cybernetics</p>
+            </div>
+          </article>
+
+          <article class="paper-item">
+            <p class="paper-year">2025</p>
+            <div>
+              <h3>ベルト型インターフェースを用いた車いすの操作性能評価</h3>
+              <p>＠ロボティクス・メカトロニクス講演会 2025（ROBOMECH 2025）</p>
+            </div>
+          </article>
+
+          <article class="paper-item">
+            <p class="paper-year">2025</p>
+            <div>
+              <h3>車いすの搭乗者行動適応型力ベース共有制御</h3>
+              <p>＠ロボティクス・メカトロニクス講演会 2025（ROBOMECH 2025）</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="activities" class="section reveal">
+        <div class="section-head">
+          <p class="eyebrow">ACTIVITY HISTORY</p>
+          <h2>活動実績</h2>
+        </div>
+        <div class="timeline-list">
+          <article class="timeline-item">
+            <p class="timeline-date">2026/01/16</p>
+            <p><a href="https://www.ipa.go.jp/jinzai/mitou/advanced/2025second/gaiyou-ur-1.html" target="_blank" rel="noreferrer">2025年度下期 未踏アドバンスト事業に採択</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/12/12</p>
+            <p><a href="https://www.kll.keio.ac.jp/ktm/exhibition/hashtag/%e3%83%8f%e3%83%b3%e3%82%ba%e3%83%95%e3%83%aa%e3%83%bc/" target="_blank" rel="noreferrer">KEIO TECHNO-MALL 2025 にて Feeling を用いたアート作品を出展</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/11/23</p>
+            <p><a href="https://onerugby.jp/news/ufp2025" target="_blank" rel="noreferrer">UNIVERSAL FOOTBALL PARK SHIBUYA 2025 にて Feeling を出展</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/11/02</p>
+            <p><a href="https://www.japan-mobility-show.com/program/startup_future_factory/" target="_blank" rel="noreferrer">JapanMobilityShow2025 StartupFutureFactoryブースにて Feeling を出展</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/10/17</p>
+            <p><a href="https://www.smartcityfes2025.metro.tokyo.lg.jp/" target="_blank" rel="noreferrer">スマートシティフェスタ2025 にて Feeling を出展</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/10/14</p>
+            <p class="timeline-with-logo">
+              <a href="https://www.ceatec.com/ja/award/#sec09" target="_blank" rel="noreferrer">CEATEC AWARD 2025</br> モビリティ部門賞 受賞</a>
+              <img class="timeline-inline-logo" src="assets/CEATEC.png" alt="CEATEC" loading="lazy" />
+            </p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/10/08</p>
+            <p><a href="https://hcr.or.jp/seminar/13" target="_blank" rel="noreferrer">国際福祉機器展 の 福祉機器開発最前線ブース にて Feeling を出展</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/07/19</p>
+            <p>サマコンフェス に Feeling を出展</p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/07/16</p>
+            <p>2025年度 健康医療ベンチャー大賞 キックオフイベント に Feeling を出展</p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/07/03</p>
+            <p><a href="https://prtimes.jp/main/html/rd/p/000000032.000151437.html" target="_blank" rel="noreferrer">Mobility for ALL 2025 日常の移動テーマ に Humonii が採択</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/05/20</p>
+            <p><a href="https://www.pt-ot-st.net/index.php/topics/detail/1735" target="_blank" rel="noreferrer">PT-OT-ST.NET に Feeling とインタビュー内容が掲載</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/03/05</p>
+            <p><a href="https://www.medical-jpn.jp/osaka/ja-jp/search/2025/product/product-details.exh-15aa9c2d-4f68-479d-b5eb-6a54bbeb515a.%E6%85%B6%E6%87%89%E7%BE%A9%E5%A1%BE%E5%A4%A7%E5%AD%A6feeling.pro-9be4806d-5208-4534-9e26-9d06f8109dc9.html#/" target="_blank" rel="noreferrer">第11回 メディカルジャパン大阪 に Feeling を出展</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/03/01</p>
+            <p><a href="https://monomove.tokyo/contest/" target="_blank" rel="noreferrer">Tokyo ものづくり Movement 2025 において Humonii が最優秀賞を受賞</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2025/01/24</p>
+            <p><a href="https://yoxo-o.jp/yoxofestival/exhibit/?ve%5B%5D=e#list" target="_blank" rel="noreferrer">YOXO Festival 2025 に Feeling を出展</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2024/12/13</p>
+            <p><a href="https://www.kll.keio.ac.jp/ktm/exhibition/hashtag/%e3%83%8F%e3%83%b3%e3%82%BA%e3%83%95%e3%83%AA%e3%83%BC/" target="_blank" rel="noreferrer">KEIO TECHNO-MALL 2024 に Feeling を出展</a></p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2024/09/05</p>
+            <p>タウンニュース港北区版 に Humonii の活動が掲載</p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2024/08/19</p>
+            <p>令和6年度 技術系スタートアップ実証実験等支援プログラム に Humonii が採択</p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2023/09/02</p>
+            <p>Mobility for ALL 2023 の実証実験に参加</p>
+          </article>
+          <article class="timeline-item">
+            <p class="timeline-date">2023/05/13</p>
+            <p>Mobility for ALL 2023 に Humonii が採択</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="social" class="section reveal">
+        <div class="section-head">
+          <p class="eyebrow">APPEAL POINT</p>
+          <h2>社会実装プロジェクト / Humonii</h2>
+        </div>
+        <article class="card social-project-card">
+          <a class="humonii-brand" href="https://www.humonii.com/" target="_blank" rel="noreferrer" aria-label="Humonii">
+            <img
+              class="humonii-logo humonii-logo-black"
+              src="assets/_Humonii-MARKTYPE-BK-2.png"
+              alt="Humonii"
+              draggable="false"
+              loading="lazy"
+            />
+            <img
+              class="humonii-logo humonii-logo-white"
+              src="assets/_Humonii-MARKTYPE-WH-2.png"
+              alt="Humonii"
+              draggable="false"
+              loading="lazy"
+            />
+          </a>
+          <div class="social-copy">
+            <p>
+              「周りと違うから」「体が思うように動かないから」と、今までできてたこと、やりたいことを諦めてきた人たちに「もっとできる！」を届けたい。年齢や障がいの有無に関わらず、誰も想像すらしなかった人間の新たな境地をも引き出せたらどんな未来が待っているだろう。体幹操作によるハンズフリー体験によって移動に留まらず活動の幅を拡張し、新しい挑戦への一歩を支えます。
+            </p>
+            <ul>
+              <li>Project Site: <a href="https://www.humonii.com/" target="_blank" rel="noreferrer">https://www.humonii.com/</a></li>
+              <li>Instagram: <a href="https://www.instagram.com/humonii_official/" target="_blank" rel="noreferrer">@humonii_official</a></li>
+              <li>Focus: 社会実装・展示・発信の一体化</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section id="hobbies" class="section reveal">
+        <div class="section-head">
+          <p class="eyebrow">PERSONAL HOBBY</p>
+          <h2>趣味</h2>
+        </div>
+        <div class="art-link-grid">
+          <a class="art-nav-card" href="art-typing-fall.html">
+            <p class="art-tag">TYPOGRAPHIC MOTION</p>
+            <h3>タイピング文字のダイナミクス</h3>
+            <p>入力した文字が重力に従って落下し、回転と余韻を伴って空間に広がります。</p>
+            <span class="art-cta">Open</span>
+          </a>
+          <a class="art-nav-card" href="art-ai-interactive.html">
+            <p class="art-tag">ROBOT NAVIGATION</p>
+            <h3>ロボットナビゲーションシミュレーション</h3>
+            <p>Global Path (A*) と Local Planner による挙動を、障害物や経路編集で操作できます。</p>
+            <span class="art-cta">Open</span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer id="contact" class="site-footer">
+      <div>
+        <p>Contact</p>
+        <a href="mailto:yuma.suzuki.work@gmail.com">yuma.suzuki.work@gmail.com</a>
+        <form id="contact-form" class="contact-form">
+          <label for="contact-name">Name</label>
+          <input id="contact-name" name="name" type="text" placeholder="Your name" autocomplete="name" />
+          <label for="contact-email">Email</label>
+          <input id="contact-email" name="email" type="email" placeholder="your@email.com" autocomplete="email" />
+          <label for="contact-subject">Subject</label>
+          <input id="contact-subject" name="subject" type="text" placeholder="Inquiry from portfolio" autocomplete="off" />
+          <label for="contact-message">Message</label>
+          <textarea id="contact-message" name="message" rows="4" placeholder="Write your message" autocomplete="off"></textarea>
+          <button type="submit" class="btn btn-primary contact-submit">Gmailで送信画面を開く</button>
+          <button type="button" id="contact-mail-app" class="btn contact-submit contact-secondary">メールアプリで開く</button>
+          <p class="contact-note">Gmailタブが開きます。開けない場合は「メールアプリで開く」を使用してください。</p>
+        </form>
+      </div>
+      <div>
+        <p>Affiliation</p>
+        <p>Takahashi Lab. Keio University<br />3-14-1, Hiyoshi Kohoku-ku, Yokohama, Japan</p>
+      </div>
+      <div>
+        <p>Social</p>
+        <p>
+          <a class="social-link" href="https://www.instagram.com/humonii_official/" target="_blank" rel="noreferrer">
+            <svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+              <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+              <circle cx="17.3" cy="6.7" r="1.1" fill="currentColor"></circle>
+            </svg>
+            <span>Instagram: @humonii_official</span>
+          </a>
+        </p>
+        <p>
+          <a class="social-link" href="https://www.linkedin.com/in/悠真-鈴木-20a9b3349" target="_blank" rel="noreferrer">
+            <svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+              <circle cx="8" cy="10" r="1.2" fill="currentColor"></circle>
+              <rect x="7" y="12" width="2" height="6" rx="0.8" fill="currentColor"></rect>
+              <path d="M12 18v-4.3c0-1.2 0.7-1.9 1.7-1.9 1 0 1.6 0.7 1.6 1.9V18h2v-4.7c0-2.1-1.2-3.3-3-3.3-1.2 0-1.9 0.5-2.3 1V10h-2v8h2z" fill="currentColor"></path>
+            </svg>
+            <span>LinkedIn</span>
+          </a>
+        </p>
+      </div>
+      <p class="copyright">© <span id="year"></span> Suzuki Yuma</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

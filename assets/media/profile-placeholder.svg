@@ -1,0 +1,12 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1100" viewBox="0 0 900 1100">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2a3845"/>
+      <stop offset="100%" stop-color="#50667a"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1100" fill="url(#g)"/>
+  <circle cx="450" cy="390" r="170" fill="#d7e2eb" fill-opacity="0.78"/>
+  <path d="M180 940c38-188 176-274 270-274s232 86 270 274" fill="#d7e2eb" fill-opacity="0.78"/>
+  <text x="450" y="1035" text-anchor="middle" fill="#eaf2f7" font-size="44" font-family="Arial, sans-serif">PROFILE PHOTO</text>
+</svg>
