@@ -1,4 +1,6 @@
-﻿const introGate = document.getElementById('intro-gate');
+﻿const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+const introGate = document.getElementById('intro-gate');
 if (introGate) {
   const INTRO_DURATION_MS = 5000;
   const FORM_PHASE_MS = 2600;
@@ -1045,7 +1047,43 @@ protectMediaAssets();
 const fluidCanvas = document.getElementById('fluid-bg');
 if (fluidCanvas) {
   const probeCanvas = document.createElement('canvas');
-  const canUseWebGL2 = !!probeCanvas.getContext('webgl2');
+  const canUseWebGL2 = (() => {
+    const probeGl = probeCanvas.getContext('webgl2', {
+      alpha: true,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      premultipliedAlpha: true
+    });
+    if (!probeGl) {
+      return false;
+    }
+
+    const testTexture = probeGl.createTexture();
+    if (!testTexture) {
+      return false;
+    }
+
+    probeGl.bindTexture(probeGl.TEXTURE_2D, testTexture);
+    probeGl.texParameteri(probeGl.TEXTURE_2D, probeGl.TEXTURE_MIN_FILTER, probeGl.NEAREST);
+    probeGl.texParameteri(probeGl.TEXTURE_2D, probeGl.TEXTURE_MAG_FILTER, probeGl.NEAREST);
+    probeGl.texParameteri(probeGl.TEXTURE_2D, probeGl.TEXTURE_WRAP_S, probeGl.CLAMP_TO_EDGE);
+    probeGl.texParameteri(probeGl.TEXTURE_2D, probeGl.TEXTURE_WRAP_T, probeGl.CLAMP_TO_EDGE);
+    probeGl.texImage2D(
+      probeGl.TEXTURE_2D,
+      0,
+      probeGl.R32F,
+      2,
+      2,
+      0,
+      probeGl.RED,
+      probeGl.FLOAT,
+      new Float32Array([0, 0, 0, 0])
+    );
+    const ok = probeGl.getError() === probeGl.NO_ERROR;
+    probeGl.deleteTexture(testTexture);
+    return ok;
+  })();
 
   const gl = canUseWebGL2
     ? fluidCanvas.getContext('webgl2', {
@@ -1065,8 +1103,8 @@ if (fluidCanvas) {
   } else {
     const baseGridScale = 2.2;
     const maxCells = 420000;
-    const damping = 0.024;
-    const waveSpeed = 0.215;
+    const damping = 0.018;
+    const waveSpeed = 0.285;
     const c2 = waveSpeed * waveSpeed;
     const maxAmplitude = 30;
     const minAmplitude = -30;
@@ -1081,8 +1119,8 @@ if (fluidCanvas) {
       bBase: 36,
       bGlow: 184,
       bCrest: 18,
-      aBase: 14,
-      aScale: 205
+      aBase: 18,
+      aScale: 235
     };
 
     let width = 0;
@@ -1101,6 +1139,7 @@ if (fluidCanvas) {
     let dropAccumulator = 0;
     let randomDropAccumulator = 0;
     let resizeQueued = false;
+    const pointerInjectionIntervalMs = 88;
 
     let waveProgram = null;
     let waveVao = null;
@@ -1184,7 +1223,7 @@ if (fluidCanvas) {
             tone / 255.0,
             (tone + 2.0) / 255.0,
             (tone + 6.0) / 255.0,
-            (alpha * 62.0) / 255.0
+            (alpha * 88.0) / 255.0
           );
           return;
         }
@@ -1193,7 +1232,7 @@ if (fluidCanvas) {
         float r = min(255.0, 8.0 + glow * 60.0 + trough * 16.0);
         float g = min(255.0, 20.0 + glow * 140.0 + trough * 24.0);
         float b = min(255.0, 36.0 + glow * 184.0 + crest * 18.0);
-        float a = min(255.0, 14.0 + alpha * 205.0);
+        float a = min(255.0, 18.0 + alpha * 235.0);
 
         outColor = vec4(r / 255.0, g / 255.0, b / 255.0, a / 255.0);
       }
@@ -1351,9 +1390,8 @@ if (fluidCanvas) {
     };
 
     const resizeCanvas = () => {
-      const rect = fluidCanvas.getBoundingClientRect();
-      width = Math.max(1, rect.width || window.innerWidth);
-      height = Math.max(1, rect.height || window.innerHeight);
+      width = Math.max(1, window.innerWidth);
+      height = Math.max(1, window.innerHeight);
       allocate();
     };
 
@@ -1454,7 +1492,7 @@ if (fluidCanvas) {
             pixels[p] = tone;
             pixels[p + 1] = tone + 2;
             pixels[p + 2] = tone + 6;
-            pixels[p + 3] = Math.min(255, alpha * 62);
+            pixels[p + 3] = Math.min(255, alpha * 88);
             continue;
           }
 
@@ -1525,9 +1563,9 @@ if (fluidCanvas) {
 
       if (rainPointer.active) {
         dropAccumulator += dt;
-        while (dropAccumulator >= 34) {
-          dropAccumulator -= 34;
-          splash(rainPointer.x, rainPointer.y, 7.2, 12);
+        while (dropAccumulator >= pointerInjectionIntervalMs) {
+          dropAccumulator -= pointerInjectionIntervalMs;
+          splash(rainPointer.x, rainPointer.y, 13.6, 16);
         }
       } else {
         dropAccumulator = 0;
@@ -1547,15 +1585,20 @@ if (fluidCanvas) {
       if (!pageVisible) {
         return;
       }
-      const rect = fluidCanvas.getBoundingClientRect();
-      rainPointer.x = clamp(event.clientX - rect.left, 0, rect.width);
-      rainPointer.y = clamp(event.clientY - rect.top, 0, rect.height);
-      splash(rainPointer.x, rainPointer.y, 8.2, 10);
+      rainPointer.x = clamp(event.clientX, 0, width - 1);
+      rainPointer.y = clamp(event.clientY, 0, height - 1);
       rainPointer.active = true;
+    };
+
+    const onPointerDown = (event) => {
+      onPointerMove(event);
+      splash(rainPointer.x, rainPointer.y, 14.0, 16);
+      dropAccumulator = 0;
     };
 
     const onPointerLeave = () => {
       rainPointer.active = false;
+      dropAccumulator = 0;
     };
 
     const onVisibilityChange = () => {
@@ -1588,6 +1631,7 @@ if (fluidCanvas) {
 
     window.addEventListener('resize', scheduleResize, { passive: true });
     window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
     window.addEventListener('pointerleave', onPointerLeave, { passive: true });
     window.addEventListener('pointercancel', onPointerLeave, { passive: true });
     window.addEventListener('blur', onPointerLeave);
@@ -1659,6 +1703,7 @@ if (cursorDot && cursorRing && window.matchMedia('(hover: hover) and (pointer: f
     target.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
   });
 }
+
 
 
 
