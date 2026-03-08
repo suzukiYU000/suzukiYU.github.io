@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://suzukiyu000.github.io/suzukiYU.github.io/sitemap.xml

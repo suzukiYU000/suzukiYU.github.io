@@ -188,9 +188,9 @@
 
         <div class="toolbar">
           <div class="row" id="mode-row">
-            <button class="mode-btn active" data-mode="obstacle">障害物</button>
+            <button class="mode-btn" data-mode="obstacle">障害物</button>
             <button class="mode-btn" data-mode="reference">参照経路</button>
-            <button class="mode-btn" data-mode="goal">ゴール</button>
+            <button class="mode-btn active" data-mode="goal">ゴール</button>
           </div>
 
           <div class="range-wrap">
@@ -207,11 +207,6 @@
           </div>
         </div>
 
-        <div class="status" id="status-line"></div>
-        <div class="legend">
-          左クリックで配置 / 右クリックで障害物削除(ゴールモード時はゴール削除)。動的障害物は自動で移動します。
-          ゴール到達時、ロボットは画面枠線のランダム位置に再配置されます。
-        </div>
       </div>
     </section>
 
@@ -222,7 +217,6 @@
         const modeRow = document.getElementById('mode-row');
         const robotSlider = document.getElementById('robot-count');
         const robotOut = document.getElementById('robot-count-out');
-        const statusLine = document.getElementById('status-line');
         const clearObstaclesBtn = document.getElementById('clear-obstacles');
         const clearReferenceBtn = document.getElementById('clear-reference');
         const clearGoalsBtn = document.getElementById('clear-goals');
@@ -233,7 +227,7 @@
         let width = 0;
         let height = 0;
         let dpr = 1;
-        let mode = 'obstacle';
+        let mode = 'goal';
         let isDrawing = false;
         let lastPaint = null;
         let lastTs = performance.now();
@@ -264,6 +258,7 @@
           if (edge === 2) return { x: random(m, width - m), y: height - m };
           return { x: m, y: random(m, height - m) };
         };
+        const centerGoalPosition = () => ({ x: width * 0.5, y: height * 0.5 });
 
         const createGoal = (x, y) => ({ x, y, r: 19 });
 
@@ -302,7 +297,7 @@
           if (!near || near.distance > near.goal.r + 18) return;
           state.goals.splice(near.index, 1);
           if (!state.goals.length) {
-            const p = randomBorderPosition();
+            const p = centerGoalPosition();
             state.goals.push(createGoal(p.x, p.y));
           }
         };
@@ -789,7 +784,6 @@
           }
           for (let i = 0; i < state.robots.length; i += 1) localPlannerStep(state.robots[i], dt);
           drawScene();
-          statusLine.textContent = `Mode: ${mode} | Robots: ${state.robots.length} | Obstacles: ${state.obstacles.length} + Dynamic ${state.dynamicObstacles.length} | Goals: ${state.goals.length}/3 | Ref points: ${state.reference.length}`;
           requestAnimationFrame(animate);
         };
 
@@ -871,7 +865,7 @@
         if (clearGoalsBtn) {
           clearGoalsBtn.addEventListener('click', () => {
             state.goals = [];
-            const p = randomBorderPosition();
+            const p = centerGoalPosition();
             state.goals.push(createGoal(p.x, p.y));
             planAllRobots();
           });
@@ -904,7 +898,8 @@
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
           if (!state.goals.length) {
-            state.goals.push(createGoal(width * 0.84, height * 0.26));
+            const p = centerGoalPosition();
+            state.goals.push(createGoal(p.x, p.y));
           }
           for (let i = 0; i < state.goals.length; i += 1) {
             state.goals[i].x = clamp(state.goals[i].x, 24, width - 24);
