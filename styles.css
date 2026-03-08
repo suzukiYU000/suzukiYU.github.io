@@ -25,6 +25,18 @@
   --maxw: 1120px;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #f8f4eb;
@@ -237,16 +249,27 @@ body.intro-lock {
   pointer-events: auto;
 }
 
-.intro-particle-canvas {
+.intro-gate.is-exiting {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.intro-particle-canvas,
+.intro-gl-canvas {
   position: absolute;
   inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.intro-gl-canvas {
   z-index: 1;
-  filter:
-    drop-shadow(0 0 10px rgba(255, 255, 255, 0.26))
-    drop-shadow(0 0 24px rgba(255, 255, 255, 0.14));
+}
+
+.intro-particle-canvas {
+  z-index: 2;
 }
 
 a {
@@ -293,7 +316,7 @@ video {
   width: 34px;
   height: 34px;
   border: 1px solid var(--cursor-ring-color);
-  transition: transform 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 }
 
 body.cursor-hover .cursor-ring {
@@ -492,8 +515,9 @@ h1 span {
 
 .art-nav-card {
   display: grid;
-  gap: 10px;
-  min-height: 220px;
+  grid-template-rows: auto 1fr;
+  gap: 18px;
+  min-height: 300px;
   padding: 18px;
   border-radius: 16px;
   border: 1px solid var(--line);
@@ -515,8 +539,49 @@ h1 span {
 }
 
 .art-nav-card h3 {
+  margin: 0;
   font-size: 1.06rem;
   line-height: 1.4;
+}
+
+.art-visual {
+  --art-image-scale: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 190px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(91, 192, 255, 0.09), transparent 34%),
+    radial-gradient(circle at 82% 82%, rgba(31, 209, 184, 0.07), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+}
+
+.art-visual--typing {
+  --art-image-scale: 0.98;
+}
+
+.art-visual--nav {
+  --art-image-scale: 1.02;
+}
+
+.art-visual-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  transform: scale(var(--art-image-scale));
+  transform-origin: center;
+  transition: transform 0.28s ease;
+}
+
+.art-nav-card:hover .art-visual-image {
+  transform: scale(calc(var(--art-image-scale) * 1.015));
 }
 
 .art-nav-card p {
@@ -940,6 +1005,14 @@ h1 span {
 
   .art-link-grid {
     grid-template-columns: 1fr;
+  }
+
+  .art-nav-card {
+    min-height: 260px;
+  }
+
+  .art-visual {
+    min-height: 170px;
   }
 }
 
